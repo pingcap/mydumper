@@ -28,6 +28,7 @@
 #include <stdarg.h>
 #include <errno.h>
 #include <zlib.h>
+#include <assert.h>
 #include "common.h"
 #include "myloader.h"
 #include "config.h"
