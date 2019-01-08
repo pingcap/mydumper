@@ -168,7 +168,7 @@ static GOptionEntry entries[] =
 	{ "less-locking", 0, 0, G_OPTION_ARG_NONE, &less_locking, "Minimize locking time on InnoDB tables.", NULL},
 	{ "long-query-guard", 'l', 0, G_OPTION_ARG_INT, &longquery, "Set long query timer in seconds, default 60", NULL },
     { "kill-long-queries", 'K', 0, G_OPTION_ARG_NONE, &killqueries, "Kill long running queries (instead of aborting)", NULL },
-    { "tidb-force-priority", 0, 0, G_OPTION_ARG_STRING, &tidb_force_priority, "Change the default priority for statements executed on a TiDB server, set the value of this variable to NO_PRIORITY, LOW_PRIORITY, DELAYED or HIGH_PRIORITY", NULL },
+    { "tidb-force-priority", 0, 0, G_OPTION_ARG_STRING, &tidb_force_priority, "Change the default priority for statements executed on a TiDB server, set the value of this variable to LOW_PRIORITY, DELAYED or HIGH_PRIORITY", NULL },
 #ifdef WITH_BINLOG
 	{ "binlogs", 'b', 0, G_OPTION_ARG_NONE, &need_binlogs, "Get a snapshot of the binary logs as well as dump data",  NULL },
 #endif
@@ -926,10 +926,10 @@ int main(int argc, char *argv[])
 	g_option_context_free(context);
 
 	//check tidb_force_priority LOW_PRIORITY, DELAYED or HIGH_PRIORITY
-	if (strcmp(tidb_force_priority,"LOW_PRIORITY")!=0 &&
+	if (tidb_force_priority != NULL && strcmp(tidb_force_priority,"LOW_PRIORITY")!=0 &&
 		strcmp(tidb_force_priority,"DELAYED")!=0 &&
 		strcmp(tidb_force_priority,"HIGH_PRIORITY")!=0 ){
-		g_print ("option parsing failed: %s, try --help\n", error->message);
+		g_print ("option parsing failed: %s, try --help\n", "wrong tidb-force-priorit value");
 		exit (EXIT_FAILURE);
 	}
 
