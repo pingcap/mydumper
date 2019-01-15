@@ -929,7 +929,7 @@ int main(int argc, char *argv[])
 	if (tidb_force_priority != NULL && strcmp(tidb_force_priority,"LOW_PRIORITY")!=0 &&
 		strcmp(tidb_force_priority,"DELAYED")!=0 &&
 		strcmp(tidb_force_priority,"HIGH_PRIORITY")!=0 ){
-		g_print ("option parsing failed: %s, try --help\n", "wrong tidb-force-priorit value");
+		g_print ("option parsing failed: %s, try --help\n", "wrong tidb-force-priority value");
 		exit (EXIT_FAILURE);
 	}
 
