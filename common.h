@@ -1,4 +1,4 @@
-/* 
+/*
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
@@ -18,6 +18,8 @@
 #define _common_h
 
 char *hostname=NULL;
+GArray *resolve_ips=NULL;
+int resolve_ip_count = 0;
 char *username=NULL;
 char *password=NULL;
 char *socket_path=NULL;

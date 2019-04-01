@@ -39,6 +39,9 @@
 #include <pcre.h>
 #include <signal.h>
 #include <glib/gstdio.h>
+#include <netdb.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
 #include "config.h"
 #ifdef WITH_BINLOG
 #include "binlog.h"
@@ -225,6 +228,9 @@ void start_dump(MYSQL *conn);
 MYSQL *create_main_connection();
 void *exec_thread(void *data);
 void write_log_file(const gchar *log_domain, GLogLevelFlags log_level, const gchar *message, gpointer user_data);
+void pre_resolve_host(const char *host);
+MYSQL *mysql_connect_wrap(MYSQL *mysql, const char *user, const char *passwd, const char *db, unsigned int port,
+                          const char *unix_socket, unsigned long client_flag);
 
 void no_log(const gchar *log_domain, GLogLevelFlags log_level, const gchar *message, gpointer user_data) {
 	(void) log_domain;
@@ -498,7 +504,7 @@ void *process_queue(struct thread_data *td) {
 
 	configure_connection(thrconn,"mydumper");
 
-	if (!mysql_real_connect(thrconn, hostname, username, password, NULL, port, socket_path, 0)) {
+	if (!mysql_connect_wrap(thrconn, username, password, NULL, port, socket_path, 0)) {
 		g_critical("Failed to connect to database: %s", mysql_error(thrconn));
 		exit(EXIT_FAILURE);
 	} else {
@@ -721,7 +727,7 @@ void *process_queue_less_locking(struct thread_data *td) {
 
 	configure_connection(thrconn,"mydumper");
 
-	if (!mysql_real_connect(thrconn, hostname, username, password, NULL, port, socket_path, 0)) {
+	if (!mysql_connect_wrap(thrconn, username, password, NULL, port, socket_path, 0)) {
 		g_critical("Failed to connect to database: %s", mysql_error(thrconn));
 		exit(EXIT_FAILURE);
 	} else {
@@ -895,13 +901,60 @@ MYSQL *reconnect_for_binlog(MYSQL *thrconn) {
 	mysql_options(thrconn, MYSQL_OPT_READ_TIMEOUT, (const char*)&timeout);
 
 
-	if (!mysql_real_connect(thrconn, hostname, username, password, NULL, port, socket_path, 0)) {
+	if (!mysql_connect_wrap(thrconn, username, password, NULL, port, socket_path, 0)) {
 		g_critical("Failed to re-connect to database: %s", mysql_error(thrconn));
 		exit(EXIT_FAILURE);
 	}
 	return thrconn;
 }
 #endif
+
+void pre_resolve_host(const char *host) {
+	struct addrinfo hints, *res;
+	int errcode;
+	char addrstr[100];
+	void *ptr;
+
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = PF_UNSPEC;
+	hints.ai_socktype = SOCK_STREAM;
+	hints.ai_flags |= AI_CANONNAME;
+
+	errcode = getaddrinfo(host, NULL, &hints, &res);
+	if (errcode != 0) {
+ 		g_print("failed to resolve host %s\n", host);
+		exit(EXIT_FAILURE);
+	}
+
+	while (res) {
+		if (res->ai_family == AF_INET6) {
+			ptr = &((struct sockaddr_in6 *) res->ai_addr)->sin6_addr;
+		} else {
+			ptr = &((struct sockaddr_in *) res->ai_addr)->sin_addr;
+		}
+		inet_ntop(res->ai_family, ptr, addrstr, 100);
+		char *addrptr = g_strndup(addrstr, strlen(addrstr));
+		g_array_append_val(resolve_ips, addrptr);
+		resolve_ip_count++;
+		res = res->ai_next;
+	}
+}
+
+MYSQL *mysql_connect_wrap(MYSQL *mysql, const char *user, const char *passwd,
+                          const char *connect_db, unsigned int db_port,
+                          const char *unix_socket, unsigned long client_flag) {
+
+	int i = 0;
+	for(; i < resolve_ip_count; ++i) {
+		char *ip = g_array_index(resolve_ips, char*, i);
+		if(!mysql_real_connect(mysql, ip, user, passwd, connect_db, db_port, unix_socket, client_flag)) {
+			g_warning("Failed to connect to ip: %s error: %s", ip, mysql_error(mysql));
+		} else {
+			return mysql;
+		}
+	}
+	return NULL;
+}
 
 int main(int argc, char *argv[])
 {
@@ -944,6 +997,10 @@ int main(int argc, char *argv[])
 		g_print("mydumper %s (%s), built against MySQL %s\n", VERSION, GIT_COMMIT_HASH, MYSQL_VERSION_STR);
 		exit (EXIT_SUCCESS);
 	}
+
+	// resolve hostname if possible
+	resolve_ips = g_array_new(FALSE, FALSE, sizeof(char *));
+	pre_resolve_host(hostname);
 
 	set_verbose(verbose);
 
@@ -1076,7 +1133,7 @@ MYSQL *create_main_connection()
 
 	configure_connection(conn,"mydumper");
 
-	if (!mysql_real_connect(conn, hostname, username, password, "", port, socket_path, 0)) {
+	if (!mysql_connect_wrap(conn, username, password, "", port, socket_path, 0)) {
 		g_critical("Error connecting to database: %s", mysql_error(conn));
 		exit(EXIT_FAILURE);
 	}
@@ -1164,7 +1221,7 @@ void *binlog_thread(void *data) {
 	}
 	mysql_options(conn,MYSQL_READ_DEFAULT_GROUP,"mydumper");
 
-	if (!mysql_real_connect(conn, hostname, username, password, db, port, socket_path, 0)) {
+	if (!mysql_connect_wrap(conn, username, password, db, port, socket_path, 0)) {
 		g_critical("Error connecting to database: %s", mysql_error(conn));
 		exit(EXIT_FAILURE);
 	}
