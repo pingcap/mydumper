@@ -910,6 +910,10 @@ MYSQL *reconnect_for_binlog(MYSQL *thrconn) {
 #endif
 
 void pre_resolve_host(const char *host) {
+	if (host == NULL) {
+		return;
+	}
+
 	struct addrinfo hints, *res;
 	int errcode;
 	char addrstr[100];
@@ -944,6 +948,9 @@ MYSQL *mysql_connect_wrap(MYSQL *mysql, const char *user, const char *passwd,
                           const char *connect_db, unsigned int db_port,
                           const char *unix_socket, unsigned long client_flag) {
 
+	if (resolve_ip_count == 0) {
+		return mysql_real_connect(mysql, NULL, user, passwd, connect_db, db_port, unix_socket, client_flag);
+	}
 	int i = 0;
 	for(; i < resolve_ip_count; ++i) {
 		char *ip = g_array_index(resolve_ips, char*, i);
