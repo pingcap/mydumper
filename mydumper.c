@@ -922,7 +922,6 @@ void pre_resolve_host(const char *host) {
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = PF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;
-	hints.ai_flags |= AI_CANONNAME;
 
 	errcode = getaddrinfo(host, NULL, &hints, &res);
 	if (errcode != 0) {
