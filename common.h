@@ -19,7 +19,6 @@
 
 char *hostname=NULL;
 GArray *resolve_ips=NULL;
-int resolve_ip_count = 0;
 char *username=NULL;
 char *password=NULL;
 char *socket_path=NULL;

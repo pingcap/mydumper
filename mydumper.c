@@ -932,13 +932,15 @@ void pre_resolve_host(const char *host) {
 	while (res) {
 		if (res->ai_family == AF_INET6) {
 			ptr = &((struct sockaddr_in6 *) res->ai_addr)->sin6_addr;
-		} else {
+		} else if (res->ai_family == AF_INET) {
 			ptr = &((struct sockaddr_in *) res->ai_addr)->sin_addr;
+		} else {
+			g_warning("skip unsupport ai_family: %d", res->ai_family);
+			continue;
 		}
 		inet_ntop(res->ai_family, ptr, addrstr, 100);
 		char *addrptr = g_strndup(addrstr, strlen(addrstr));
 		g_array_append_val(resolve_ips, addrptr);
-		resolve_ip_count++;
 		res = res->ai_next;
 	}
 }
@@ -947,11 +949,11 @@ MYSQL *mysql_connect_wrap(MYSQL *mysql, const char *user, const char *passwd,
                           const char *connect_db, unsigned int db_port,
                           const char *unix_socket, unsigned long client_flag) {
 
-	if (resolve_ip_count == 0) {
+	if (resolve_ips == NULL || resolve_ips->len == 0) {
 		return mysql_real_connect(mysql, NULL, user, passwd, connect_db, db_port, unix_socket, client_flag);
 	}
-	int i = 0;
-	for(; i < resolve_ip_count; ++i) {
+	guint i = 0;
+	for(; i < resolve_ips->len; ++i) {
 		char *ip = g_array_index(resolve_ips, char*, i);
 		if(!mysql_real_connect(mysql, ip, user, passwd, connect_db, db_port, unix_socket, client_flag)) {
 			g_warning("Failed to connect to ip: %s error: %s", ip, mysql_error(mysql));
