@@ -83,7 +83,7 @@ void pre_resolve_host(const char *host) {
 		} else if (res->ai_family == AF_INET) {
 			ptr = &((struct sockaddr_in *) res->ai_addr)->sin_addr;
 		} else {
-			g_warning("skip unsupport ai_family: %d", res->ai_family);
+			g_warning("skip unsupported ai_family: %d", res->ai_family);
 			continue;
 		}
 		inet_ntop(res->ai_family, ptr, addrstr, 100);
