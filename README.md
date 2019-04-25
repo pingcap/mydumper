@@ -77,3 +77,6 @@ To not dump all databases starting with test:
 Of course, regex functionality can be used to describe pretty much any list of tables.
 
 
+
+
+
