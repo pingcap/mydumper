@@ -1905,7 +1905,6 @@ GList * get_chunks_for_table(MYSQL *conn, char *database, char *table, struct co
 	GList *chunks = NULL;
 	MYSQL_RES *indexes=NULL, *minmax=NULL, *total=NULL;
 	MYSQL_ROW row;
-    char tidb_rowid[] = "_tidb_rowid";
 	char *field = NULL;
 	int showed_nulls=0;
     gchar *query = NULL;
@@ -1915,7 +1914,7 @@ GList * get_chunks_for_table(MYSQL *conn, char *database, char *table, struct co
         query=g_strdup_printf("select `_tidb_rowid` from `%s`.`%s` limit 0;", database, table);
         if(!mysql_query(conn,query)){
             // found _tidb_rowid
-            field = tidb_rowid;
+            field = g_strdup_printf("_tidb_rowid");
             g_message("Using `_tidb_rowid` to get chunks for `%s`.`%s`", database, table);
         }
         g_free(query);
