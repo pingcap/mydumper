@@ -1916,6 +1916,7 @@ GList * get_chunks_for_table(MYSQL *conn, char *database, char *table, struct co
             // found _tidb_rowid
             field = g_strdup_printf("_tidb_rowid");
             g_message("Using `_tidb_rowid` to get chunks for `%s`.`%s`", database, table);
+            mysql_free_result(mysql_use_result(conn))
         }
         g_free(query);
     }
