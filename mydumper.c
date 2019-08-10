@@ -1970,14 +1970,14 @@ GList * get_chunks_for_table(MYSQL *conn, char *database, char *table, struct co
 	if (!field) goto cleanup;
 
 	/* Get minimum/maximum */
-	if (detected_server == SERVER_TYPE_TIDB && !strcmp(field,"_tidb_rowid")){
-        mysql_query(conn,query=g_strdup_printf("SELECT min, max from (select %s MIN(`_tidb_rowid`) min from `%s`.`%s`) t1, (select %s MAX(`_tidb_rowid`) max FROM `%s`.`%s`) t2",
-                select_hint, database, table, select_hint, database, table));
-        g_free(query);
-	}else{
+//	if (detected_server == SERVER_TYPE_TIDB && !strcmp(field,"_tidb_rowid")){
+//        mysql_query(conn,query=g_strdup_printf("SELECT min, max from (select %s MIN(`_tidb_rowid`) min from `%s`.`%s`) t1, (select %s MAX(`_tidb_rowid`) max FROM `%s`.`%s`) t2",
+//                select_hint, database, table, select_hint, database, table));
+//        g_free(query);
+//	}else{
         mysql_query(conn, query=g_strdup_printf("SELECT %s MIN(`%s`),MAX(`%s`) FROM `%s`.`%s`", select_hint, field, field, database, table));
         g_free(query);
-	}
+//	}
 	minmax=mysql_store_result(conn);
 
 	if (!minmax)
