@@ -1907,35 +1907,28 @@ GList * get_chunks_for_table(MYSQL *conn, char *database, char *table, struct co
 	MYSQL_ROW row;
 	char *field = NULL;
 	int showed_nulls=0;
-    gchar *query = NULL;
+	gchar *query = NULL;
 
-    /* If detected server is TiDB, try using _tidb_rowid*/
-    if(detected_server == SERVER_TYPE_TIDB){
-        query=g_strdup_printf("select `_tidb_rowid` from `%s`.`%s` limit 0;", database, table);
-        if(!mysql_query(conn,query)){
-            // found _tidb_rowid
-            field = g_strdup_printf("_tidb_rowid");
-            g_message("Using `_tidb_rowid` to get chunks for `%s`.`%s`", database, table);
-            mysql_free_result(mysql_use_result(conn));
-        }
-        g_free(query);
-    }
+	/* If detected server is TiDB, try using _tidb_rowid*/
+	if (detect_tidb_rowid(conn,database,table)){
+		field = g_strdup("_tidb_rowid");
+	}
 
     /* pick index, in future should be able to preset in configuration too */
-    if (!field) {
-        query = g_strdup_printf("SHOW INDEX FROM `%s`.`%s`",database,table);
-        mysql_query(conn,query);
-        g_free(query);
+	if (!field) {
+		query = g_strdup_printf("SHOW INDEX FROM `%s`.`%s`",database,table);
+		mysql_query(conn,query);
+		g_free(query);
 
-        indexes=mysql_store_result(conn);
-        while ((row = mysql_fetch_row(indexes))) {
-            if (!strcmp(row[2], "PRIMARY") && (!strcmp(row[3], "1"))) {
-                /* Pick first column in PK, cardinality doesn't matter */
-                field = row[4];
-                break;
-            }
-        }
-    }
+		indexes=mysql_store_result(conn);
+		while ((row = mysql_fetch_row(indexes))) {
+			if (!strcmp(row[2], "PRIMARY") && (!strcmp(row[3], "1"))) {
+				/* Pick first column in PK, cardinality doesn't matter */
+				field = row[4];
+				break;
+			}
+		}
+	}
 
 	/* If no PK found, try using first UNIQUE index */
 	if (!field) {
@@ -1970,14 +1963,8 @@ GList * get_chunks_for_table(MYSQL *conn, char *database, char *table, struct co
 	if (!field) goto cleanup;
 
 	/* Get minimum/maximum */
-//	if (detected_server == SERVER_TYPE_TIDB && !strcmp(field,"_tidb_rowid")){
-//        mysql_query(conn,query=g_strdup_printf("SELECT min, max from (select %s MIN(`_tidb_rowid`) min from `%s`.`%s`) t1, (select %s MAX(`_tidb_rowid`) max FROM `%s`.`%s`) t2",
-//                select_hint, database, table, select_hint, database, table));
-//        g_free(query);
-//	}else{
-        mysql_query(conn, query=g_strdup_printf("SELECT %s MIN(`%s`),MAX(`%s`) FROM `%s`.`%s`", select_hint, field, field, database, table));
-        g_free(query);
-//	}
+	mysql_query(conn, query=g_strdup_printf("SELECT %s MIN(`%s`),MAX(`%s`) FROM `%s`.`%s`", select_hint, field, field, database, table));
+	g_free(query);
 	minmax=mysql_store_result(conn);
 
 	if (!minmax)
