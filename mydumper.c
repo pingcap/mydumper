@@ -2021,8 +2021,8 @@ cleanup:
 		mysql_free_result(indexes);
 	if (minmax)
 		mysql_free_result(minmax);
-    if (total)
-        mysql_free_result(total);
+	if (total)
+		mysql_free_result(total);
 	return chunks;
 }
 
