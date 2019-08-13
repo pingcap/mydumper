@@ -1914,7 +1914,7 @@ GList * get_chunks_for_table(MYSQL *conn, char *database, char *table, struct co
 		field = g_strdup("_tidb_rowid");
 	}
 
-    /* pick index, in future should be able to preset in configuration too */
+	/* pick index, in future should be able to preset in configuration too */
 	if (!field) {
 		query = g_strdup_printf("SHOW INDEX FROM `%s`.`%s`",database,table);
 		mysql_query(conn,query);
