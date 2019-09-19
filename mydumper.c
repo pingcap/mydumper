@@ -3105,7 +3105,7 @@ guint64 dump_table_data(MYSQL * conn, FILE *file, char *database, char *table, c
 	}
 
 	gboolean has_generated_fields = detect_generated_fields(conn, database, table);
-	gboolean dump_tidb_rowid = detect_tidb_rowid(conn, database, table) && enable_tidb_rowid;
+	gboolean dump_tidb_rowid = enable_tidb_rowid && detect_tidb_rowid(conn, database, table);
 
 	/* Ghm, not sure if this should be statement_size - but default isn't too big for now */
 	GString* statement = g_string_sized_new(statement_size);
