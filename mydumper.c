@@ -3154,6 +3154,7 @@ guint64 dump_table_data(MYSQL * conn, FILE *file, char *database, char *table, c
 	if (where_clause) {
 		g_string_append_printf(query_string, " %s (%s)", separator, where_clause);
 	}
+	// g_string_append_printf(query_string, " LIMIT 100000");
 
 	g_string_free(select_fields, TRUE);
 	query = g_string_free(query_string, FALSE);
@@ -3182,6 +3183,7 @@ guint64 dump_table_data(MYSQL * conn, FILE *file, char *database, char *table, c
 
 	/* Poor man's data dump code */
 	while ((row = mysql_fetch_row(result))) {
+		g_message("row #%lu", num_rows);
 		gulong *lengths = mysql_fetch_lengths(result);
 		num_rows++;
 
@@ -3270,6 +3272,7 @@ guint64 dump_table_data(MYSQL * conn, FILE *file, char *database, char *table, c
 					}
 					g_string_append(statement,";\n");
 
+					g_message("writing %lu bytes partial to %s", statement->len, fcfile);
 					if (!write_data(file,statement)) {
 						g_critical("Could not write out data for %s.%s", database, table);
 						goto cleanup;
@@ -3337,6 +3340,7 @@ guint64 dump_table_data(MYSQL * conn, FILE *file, char *database, char *table, c
 
 	if (statement->len > 0) {
 		g_string_append(statement,";\n");
+		g_message("writing %lu bytes complete to %s", statement->len, fcfile);
 		if (!write_data(file,statement)) {
 			g_critical("Could not write out closing newline for %s.%s, now this is sad!", database, table);
 			goto cleanup;
