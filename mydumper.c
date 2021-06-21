@@ -514,17 +514,6 @@ void *process_queue(struct thread_data *td) {
 	if ((detected_server == SERVER_TYPE_MYSQL) && mysql_query(thrconn, "SET SESSION wait_timeout = 2147483")){
 		g_warning("Failed to increase wait_timeout: %s", mysql_error(thrconn));
 	}
-	if (mysql_query(thrconn, "SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ")) {
-		g_critical("Failed to set isolation level: %s", mysql_error(thrconn));
-		exit(EXIT_FAILURE);
-	}
-	if (mysql_query(thrconn, "START TRANSACTION /*!40108 WITH CONSISTENT SNAPSHOT */")) {
-		g_critical("Failed to start consistent snapshot: %s",mysql_error(thrconn));
-		exit(EXIT_FAILURE);
-	}
-	if(!skip_tz && mysql_query(thrconn, "/*!40103 SET TIME_ZONE='+00:00' */")){
-		g_critical("Failed to set time zone: %s",mysql_error(thrconn));
-	}
 
 	if (detected_server == SERVER_TYPE_TIDB) {
 
@@ -549,6 +538,18 @@ void *process_queue(struct thread_data *td) {
 
 		g_message("Thread %d set to tidb_snapshot '%s'", td->thread_id, tidb_snapshot);
 
+	}
+
+	if (mysql_query(thrconn, "SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ")) {
+		g_critical("Failed to set isolation level: %s", mysql_error(thrconn));
+		exit(EXIT_FAILURE);
+	}
+	if (mysql_query(thrconn, "START TRANSACTION /*!40108 WITH CONSISTENT SNAPSHOT */")) {
+		g_critical("Failed to start consistent snapshot: %s",mysql_error(thrconn));
+		exit(EXIT_FAILURE);
+	}
+	if(!skip_tz && mysql_query(thrconn, "/*!40103 SET TIME_ZONE='+00:00' */")){
+		g_critical("Failed to set time zone: %s",mysql_error(thrconn));
 	}
 
 	/* Unfortunately version before 4.1.8 did not support consistent snapshot transaction starts, so we cheat */
